@@ -50,7 +50,9 @@ module TestRunGrader
   
 private
   def self.create_test_case_runs(submission, results)
-    all_passed = true
+    if submission.pretest_error.blank?
+      all_passed = true
+    end
     results.each do |test_result|
       passed = test_result["status"] == 'PASSED'
       tcr = TestCaseRun.new(
@@ -73,14 +75,16 @@ private
     awarded_points = AwardedPoint.course_user_points(course, user).map(&:name)
 
     points = []
-    for point_name in points_from_test_results(results) - review_points
-      points << point_name
-      unless awarded_points.include?(point_name)
-        submission.awarded_points << AwardedPoint.new(
-          :name => point_name,
-          :course => course,
-          :user => user
-        )
+    if submission.pretest_error.blank?
+      for point_name in points_from_test_results(results) - review_points
+        points << point_name
+        unless awarded_points.include?(point_name)
+          submission.awarded_points << AwardedPoint.new(
+            :name => point_name,
+            :course => course,
+            :user => user
+          )
+        end
       end
     end
 
