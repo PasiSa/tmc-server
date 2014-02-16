@@ -18,7 +18,7 @@ module SandboxResultsSaver
       submission.valgrind = results['valgrind']
 
       if not submission.valgrind.blank?
-        submission.pretest_error = 'Errors in Valgrind check. See Valgrind log below.'
+        submission.pretest_error = 'Errors in Valgrind run. See Valgrind log at TMC server.'
       end
 
       case results['status']
