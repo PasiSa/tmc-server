@@ -61,6 +61,7 @@ TmcServer::Application.routes.draw do
     resources :reviews, :only => [:index, :new, :create]
   end
 
+  get 'paste/:paste_key', to: 'files#index', as: 'paste'
   resources :reviews, :only => [:update, :destroy]
 
   match '/exercises/:exercise_id/submissions' => 'submissions#update_by_exercise', :via => :put, :as => 'exercise_update_submissions'
@@ -70,8 +71,6 @@ TmcServer::Application.routes.draw do
   end
 
   resources :feedback_answers, :only => [:show]
-
-  resources :student_events, :only => [:create]
 
   resource :page_presence, :only => [:update]
 

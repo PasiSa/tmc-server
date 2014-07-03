@@ -49,5 +49,14 @@ module TmcServer
 
     config.autoload_paths += Dir["#{config.root}/lib/**/"]
 
+    config.middleware.use Rack::Cors do
+      allow do
+        origins SiteSetting.all_settings['cors_origins']
+        resource '/auth*', :headers => :any, :methods => [:get, :post]
+        resource '/courses/*/points*', :headers => :any, :methods => [:get]
+      end
+    end
+
+
     end
 end

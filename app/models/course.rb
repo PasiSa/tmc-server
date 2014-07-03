@@ -28,17 +28,8 @@ class Course < ActiveRecord::Base
   has_many :test_scanner_cache_entries, :dependent => :delete_all
   has_many :feedback_questions, :dependent => :delete_all
   has_many :feedback_answers  # destroyed transitively when questions are destroyed
-  has_many :student_events, :dependent => :delete_all
   has_many :unlocks, :dependent => :delete_all
   has_many :course_notifications, :dependent => :delete_all
-
-  acts_as_api
-
-  api_accessible :course_show_with_exercises do |template|
-    template.add :name
-    template.add :id
-    template.add :exercises
-  end
 
   def destroy
     # Optimization: delete dependent objects quickly.
@@ -58,7 +49,11 @@ class Course < ActiveRecord::Base
     user.administrator? || (
       !hidden &&
       (hide_after == nil || hide_after > Time.now) &&
-      (hidden_if_registered_after == nil || (!user.guest? && hidden_if_registered_after > user.created_at))
+      (
+        hidden_if_registered_after == nil ||
+        hidden_if_registered_after > Time.now ||
+        (!user.guest? && hidden_if_registered_after > user.created_at)
+      )
     )
   end
 
@@ -88,7 +83,7 @@ class Course < ActiveRecord::Base
     self.spreadsheet_key = new_options['spreadsheet_key']
 
     self.description = new_options['description']
-
+    self.paste_visibility = new_options['paste_visibility']
     if new_options['locked_exercise_points_visible'] != nil
       self.locked_exercise_points_visible = new_options['locked_exercise_points_visible']
     else
@@ -104,7 +99,7 @@ class Course < ActiveRecord::Base
   def refresh_gdocs_worksheet sheetname
     GDocsExport.refresh_course_worksheet_points self, sheetname
   end
-  
+
   def self.cache_root
     "#{FileStore.root}/course"
   end
@@ -112,7 +107,7 @@ class Course < ActiveRecord::Base
   def cache_path
     "#{Course.cache_root}/#{self.name}-#{self.cache_version}"
   end
-  
+
   # Holds a clone of the course repository
   def clone_path
     "#{cache_path}/clone"
@@ -132,15 +127,15 @@ class Course < ActiveRecord::Base
       nil
     end
   end
-  
+
   def solution_path
     "#{cache_path}/solution"
   end
-  
+
   def stub_path
     "#{cache_path}/stub"
   end
-  
+
   def stub_zip_path
     "#{cache_path}/stub_zip"
   end
@@ -184,19 +179,19 @@ class Course < ActiveRecord::Base
     super
     @groups = nil
   end
-  
+
   def refresh
     CourseRefresher.new.refresh_course(self)
   end
-  
+
   def delete_cache
     FileUtils.rm_rf cache_path
   end
-  
+
   def self.valid_source_backends
     ['git']
   end
-  
+
   def self.default_source_backend
     'git'
   end
@@ -285,14 +280,14 @@ class Course < ActiveRecord::Base
     result
   end
 
-  
+
 private
   def check_source_backend
     unless Course.valid_source_backends.include?(source_backend)
       errors.add(:source_backend, 'must be one of [' + Course.valid_source_backends.join(', ') + "]")
     end
   end
-  
+
   def set_default_source_backend
     self.source_backend ||= Course.default_source_backend
   end

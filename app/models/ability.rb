@@ -11,7 +11,7 @@ class Ability
       can :refresh, Course
     else
       can :read, :all
-      
+
       cannot :read, User
       can :read, User, :id => user.id
       can :create, User if SiteSetting.value(:enable_signup)
@@ -40,8 +40,6 @@ class Ability
         ans.submission.user_id == user.id
       end
 
-      can :create, StudentEvent
-      
       cannot :read, Solution
       can :read, Solution do |sol|
         sol.visible_to?(user)

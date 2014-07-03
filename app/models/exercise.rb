@@ -8,8 +8,6 @@ class Exercise < ActiveRecord::Base
     :conditions => proc { "submissions.course_id = #{self.course_id}" }
   has_many :feedback_answers, :foreign_key => :exercise_name, :primary_key => :name,
     :conditions => proc { "feedback_answers.course_id = #{self.course_id}" }
-  has_many :student_events, :foreign_key => :exercise_name, :primary_key => :name,
-    :conditions => proc { "student_events.course_id = #{self.course_id}" }
   has_many :unlocks, :foreign_key => :exercise_name, :primary_key => :name,
     :conditions => proc { "unlocks.course_id = #{self.course_id}" }
 
@@ -18,15 +16,6 @@ class Exercise < ActiveRecord::Base
   scope :course_gdocs_sheet_exercises, lambda { |course, gdocs_sheet|
     where(:course_id => course.id, :gdocs_sheet => gdocs_sheet)
   }
-
-  acts_as_api
-
-  api_accessible :course_show_with_exercises do |t|
-    t.add :name
-    t.add :exercise_json_url
-    t.add :hidden
-    t.add :returnable_forced
-  end
 
   def exercise_json_url
     Rails.application.routes.url_helpers.exercise_url(self.id, format: 'json', api_version: 5)
@@ -81,7 +70,7 @@ class Exercise < ActiveRecord::Base
   def solution_zip_file_path
     "#{course.solution_zip_path}/#{self.name}.zip"
   end
-  
+
   def solution
     Solution.new(self)
   end
@@ -127,7 +116,7 @@ class Exercise < ActiveRecord::Base
   def downloadable_by?(user)
     visible_to?(user) && unlocked_for?(user)
   end
- 
+
   # Whether the exercise has been published (it may still be hidden)
   def published?
     !publish_time || publish_time <= Time.now
@@ -295,7 +284,7 @@ class Exercise < ActiveRecord::Base
 
   def self.count_completed(users, exercises)
     return 0 if exercises.empty?
-    
+
     s = Submission.arel_table
 
     user_ids = users.map(&:id)

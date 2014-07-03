@@ -39,7 +39,7 @@ class SubmissionsController < ApplicationController
       format.zip { send_data(@submission.return_file, :filename => @submission.downloadable_file_name) }
       format.json do
         output = {
-          :api_version => API_VERSION,
+          :api_version => ApiVersion::API_VERSION,
           :status => @submission.status,
           :points => @submission.points_list,
           :missing_review_points => @exercise.missing_review_points_for(@submission.user)
@@ -65,6 +65,16 @@ class SubmissionsController < ApplicationController
         if @exercise.solution.visible_to?(current_user)
           output[:solution_url] = view_context.exercise_solution_url(@exercise)
         end
+
+        if @submission.paste_available?
+          output[:paste_url] = paste_url(@submission.paste_key)
+        end
+
+        output[:processing_time] = @submission.processing_time
+        output[:reviewed] = @submission.reviewed?
+        output[:requests_review] = @submission.requests_review?
+        output[:submitted_at] = @submission.created_at
+
 
         render :json => output
       end
@@ -102,20 +112,23 @@ class SubmissionsController < ApplicationController
         :requests_review => !!params[:request_review],
         :paste_available => !!params[:paste],
         :message_for_paste => if params[:paste] then params[:message_for_paste] || '' else '' end,
-        :message_for_reviewer => if params[:request_review] then params[:message_for_reviewer] || '' else '' end
+        :message_for_reviewer => if params[:request_review] then params[:message_for_reviewer] || '' else '' end,
+        :client_time => if params[:client_time] then Time.at(params[:client_time].to_i) else nil end,
+        :client_nanotime => params[:client_nanotime],
+        :client_ip => request.env["HTTP_X_FORWARDED_FOR"] || request.remote_ip
       )
-      
+
       authorize! :create, @submission
-      
+
       if !@submission.save
         errormsg = 'Failed to save submission.'
       end
     end
-    
+
     if !errormsg
       SubmissionProcessor.new.process_submission(@submission)
     end
-    
+
     respond_to do |format|
       format.html do
         if !errormsg
@@ -123,20 +136,20 @@ class SubmissionsController < ApplicationController
                       :notice => 'Submission received.')
         else
           redirect_to(exercise_path(@exercise),
-                      :alert => errormsg) 
+                      :alert => errormsg)
         end
       end
       format.json do
         if !errormsg
-          render :json => { :submission_url => submission_url(@submission, :format => 'json', :api_version => API_VERSION),
-                            :paste_url => submission_files_url(@submission)}
+          render :json => { :submission_url => submission_url(@submission, :format => 'json', :api_version => ApiVersion::API_VERSION),
+                            :paste_url => if @submission.paste_key then paste_url(@submission.paste_key) else '' end}
         else
           render :json => { :error => errormsg }
         end
       end
     end
   end
-  
+
   def update
     submission = Submission.find(params[:id]) || respond_not_found
     authorize! :update, submission
@@ -151,7 +164,7 @@ class SubmissionsController < ApplicationController
       respond_not_found
     end
   end
-  
+
   def update_by_exercise
     for submission in @exercise.submissions
       schedule_for_rerun(submission, -2)
@@ -191,7 +204,7 @@ private
     end
 
     render :json => {
-      :api_version => API_VERSION,
+      :api_version => ApiVersion::API_VERSION,
       :json_url_schema => submission_url(:id => ':id', :format => 'json'),
       :zip_url_schema => submission_url(:id => ':id', :format => 'zip'),
       :submissions => submissions.map(&:id)
