@@ -34,6 +34,12 @@ Rails.application.configure do
 
   # `config.assets.precompile` and `config.assets.version` have moved to config/initializers/assets.rb
 
+  # Addition by Pasi: try to get mails working (used smtp by default)
+  config.action_mailer.delivery_method = :sendmail
+  config.action_mailer.sendmail_settings = {
+    arguments: '-i'
+  }
+
   # Specifies the header that your server uses for sending files.
   # config.action_dispatch.x_sendfile_header = "X-Sendfile" # for apache
   # config.action_dispatch.x_sendfile_header = 'X-Accel-Redirect' # for nginx
@@ -42,7 +48,7 @@ Rails.application.configure do
   # config.force_ssl = true
 
   # Set to :debug to see everything in the log.
-  config.log_level = :info
+  config.log_level = :debug
 
   # Prepend all log lines with the following tags.
   # config.log_tags = [ :subdomain, :uuid ]

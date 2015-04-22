@@ -1,8 +1,10 @@
 development:
   adapter: postgresql
   username: tmc
-  password: tmc
+  password: CHANGEME
   database: tmc-development
+  host: localhost
+  port: 5433
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
@@ -10,14 +12,19 @@ development:
 test:
   adapter: postgresql
   username: tmc
-  password: tmc
+  password: CHANGEME
   database: tmc-test
+  host: localhost
+  port: 5433
 
+# Aalto Spring 2015 courses use PG 9.2 on port 5433
 production:
   adapter: postgresql
   username: tmc
-  password: tmc
+  password: CHANGEME
   database: tmc
+  host: localhost
+  port: 5433
 
 
 # You can optionally override stuff in a database.local.yml
